@@ -4,13 +4,16 @@
 //
 // Changes:
 // * .resolve() and .reject() work differently now
+// * New helper function: isThenable()
+
+import * as assert from 'assert';
 
 export class ToyPromise3 {
   _fulfillmentTasks = [];
   _rejectionTasks = [];
   _promiseResult = undefined;
   _promiseState = 'pending';
-  _settledOrLockedIn = false; // [new]
+  _alreadyResolved = false; // [new]
   
   then(onFulfilled, onRejected) {
     const resultPromise = new ToyPromise3();
@@ -56,34 +59,36 @@ export class ToyPromise3 {
   }
 
   resolve(value) { // [new]
-    if (this._settledOrLockedIn) return this;
-    this._settledOrLockedIn = true;
-    this._coreResolve(value);
-    return this; // enable chaining
-  }
-  _coreResolve(value) { // [new]
-    // Is `value` a thenable?
-    if (typeof value === 'object' && value !== null && 'then' in value) {
+    if (this._alreadyResolved) return this;
+    this._alreadyResolved = true;
+
+    if (isThenable(value)) {
       // Forward fulfillments and rejections from `value` to `this`.
       // The callbacks are always executed asynchronously
       value.then(
-        (result) => this._coreResolve(result),
-        (error) => this._coreReject(error));
+        (result) => this._doFulfill(result),
+        (error) => this._doReject(error));
     } else {
-      this._promiseState = 'fulfilled';
-      this._promiseResult = value;
-      this._clearAndEnqueueTasks(this._fulfillmentTasks);
+      this._doFulfill(value);
     }
+
+    return this; // enable chaining
+  }
+
+  _doFulfill(value) { // [new]
+    assert.ok(!isThenable(value));
+    this._promiseState = 'fulfilled';
+    this._promiseResult = value;
+    this._clearAndEnqueueTasks(this._fulfillmentTasks);
   }
 
   reject(error) { // [new]
-    if (this._settledOrLockedIn) return this;
-    this._settledOrLockedIn = true;
-    this._coreReject(error);
+    if (this._alreadyResolved) return this;
+    this._alreadyResolved = true;
+    this._doReject(error);
     return this; // enable chaining
   }
-  /** Only a separate method because it’s called from ._coreResolve() */
-  _coreReject(error) { // [new]
+  _doReject(error) { // [new]
     this._promiseState = 'rejected';
     this._promiseResult = error;
     this._clearAndEnqueueTasks(this._rejectionTasks);
@@ -94,6 +99,11 @@ export class ToyPromise3 {
     this._rejectionTasks = undefined;
     tasks.map(addToTaskQueue);
   }
+}
+
+function isThenable(value) { // [new]
+  return typeof value === 'object' && value !== null
+    && typeof value.then === 'function';
 }
 
 function addToTaskQueue(task) {

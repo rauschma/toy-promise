@@ -52,6 +52,7 @@ export class ToyPromise2 {
       default:
         throw new Error();
     }
+    
     return resultPromise; // [new]
   }
 

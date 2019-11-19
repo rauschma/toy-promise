@@ -1,12 +1,18 @@
 // Features:
 // * Turn exceptions in user code into rejections
+//
+// Changes:
+// * .then() executes onFulfilled and onRejected differently
+// * New method .catch()
+
+import * as assert from 'assert';
 
 export class ToyPromise4 {
   _fulfillmentTasks = [];
   _rejectionTasks = [];
   _promiseResult = undefined;
   _promiseState = 'pending';
-  _settledOrLockedIn = false;
+  _alreadyResolved = false;
   
   then(onFulfilled, onRejected) {
     const resultPromise = new ToyPromise4();
@@ -32,6 +38,7 @@ export class ToyPromise4 {
       }
     };
 
+
     switch (this._promiseState) {
       case 'pending':
         this._fulfillmentTasks.push(fulfillmentTask);
@@ -51,42 +58,48 @@ export class ToyPromise4 {
 
   _runReactionSafely(resultPromise, reaction) { // [new]
     try {
-      let returned = reaction(this.promiseResult);
+      const returned = reaction(this._promiseResult);
       resultPromise.resolve(returned);
     } catch (e) {
       resultPromise.reject(e);
     }
   }
-  
-  resolve(value) {
-    if (this._settledOrLockedIn) return this;
-    this._settledOrLockedIn = true;
-    this._coreResolve(value);
-    return this; // enable chaining
+
+  catch(onRejected) { // [new]
+    return this.then(null, onRejected);
   }
-  _coreResolve(value) {
-    // Is `value` a thenable?
-    if (typeof value === 'object' && value !== null && 'then' in value) {
+
+  resolve(value) {
+    if (this._alreadyResolved) return this;
+    this._alreadyResolved = true;
+
+    if (isThenable(value)) {
       // Forward fulfillments and rejections from `value` to `this`.
       // The callbacks are always executed asynchronously
       value.then(
-        (result) => this._coreResolve(result),
-        (error) => this._coreReject(error));
+        (result) => this._doFulfill(result),
+        (error) => this._doReject(error));
     } else {
-      this._promiseState = 'fulfilled';
-      this._promiseResult = value;
-      this._clearAndEnqueueTasks(this._fulfillmentTasks);
+      this._doFulfill(value);
     }
+
+    return this; // enable chaining
+  }
+
+  _doFulfill(value) {
+    assert.ok(!isThenable(value));
+    this._promiseState = 'fulfilled';
+    this._promiseResult = value;
+    this._clearAndEnqueueTasks(this._fulfillmentTasks);
   }
 
   reject(error) {
-    if (this._settledOrLockedIn) return this;
-    this._settledOrLockedIn = true;
-    this._coreReject(error);
+    if (this._alreadyResolved) return this;
+    this._alreadyResolved = true;
+    this._doReject(error);
     return this; // enable chaining
   }
-  /** Only a separate method because it’s called from ._coreResolve() */
-  _coreReject(error) {
+  _doReject(error) {
     this._promiseState = 'rejected';
     this._promiseResult = error;
     this._clearAndEnqueueTasks(this._rejectionTasks);
@@ -97,6 +110,11 @@ export class ToyPromise4 {
     this._rejectionTasks = undefined;
     tasks.map(addToTaskQueue);
   }
+}
+
+function isThenable(value) {
+  return typeof value === 'object' && value !== null
+    && typeof value.then === 'function';
 }
 
 function addToTaskQueue(task) {
