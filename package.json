@@ -1,0 +1,11 @@
+{
+  "name": "@rauschma/toy-promise",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "mocha --ui qunit --require esm"
+  },
+  "devDependencies": {
+    "esm": "^3.2.25",
+    "mocha": "^6.2.2"
+  }
+}
