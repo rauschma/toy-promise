@@ -96,7 +96,7 @@ function simpleChaining(...ToyPromiseClasses) {
       const tp = new ToyPromise();
       tp.reject();
       tp
-      .then(null, (reason) => {
+      .catch((reason) => {
         assert.equal(reason, undefined);
         return 123;
       })
@@ -114,7 +114,7 @@ function simpleChaining(...ToyPromiseClasses) {
         return 'b';
       })
       // Missing onFulfilled: value is passed on to next .then()
-      .then(null, (reason) => {
+      .catch((reason) => {
         // Never called
         assert.fail();
       })

@@ -2,6 +2,7 @@
 // * .then() returns a promise, which fulfills with what
 //   either onFulfilled or onRejected return
 // * Missing onFulfilled and onRejected pass on what they receive
+// * New convenience method .catch()
 // 
 // Changes:
 // * Several locations inside .then()
@@ -15,7 +16,6 @@ export class ToyPromise2 {
   then(onFulfilled, onRejected) {
     const resultPromise = new ToyPromise2(); // [new]
 
-    // Runs if the Promise is fulfilled (now or later)
     const fulfillmentTask = () => {
       if (typeof onFulfilled === 'function') {
         const returned = onFulfilled(this._promiseResult);
@@ -54,6 +54,10 @@ export class ToyPromise2 {
     }
     
     return resultPromise; // [new]
+  }
+
+  catch(onRejected) { // [new]
+    return this.then(null, onRejected);
   }
 
   resolve(value) {

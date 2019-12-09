@@ -18,7 +18,6 @@ export class ToyPromise3 {
   then(onFulfilled, onRejected) {
     const resultPromise = new ToyPromise3();
 
-    // Runs if the Promise is fulfilled (now or later)
     const fulfillmentTask = () => {
       if (typeof onFulfilled === 'function') {
         const returned = onFulfilled(this._promiseResult);
@@ -56,6 +55,10 @@ export class ToyPromise3 {
         throw new Error();
     }
     return resultPromise;
+  }
+
+  catch(onRejected) {
+    return this.then(null, onRejected);
   }
 
   resolve(value) { // [new]

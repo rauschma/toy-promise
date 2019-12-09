@@ -11,10 +11,14 @@ export class ToyPromise1 {
   
   then(onFulfilled, onRejected) {
     const fulfillmentTask = () => {
-      onFulfilled(this._promiseResult);
+      if (typeof onFulfilled === 'function') {
+        onFulfilled(this._promiseResult);
+      }
     };
     const rejectionTask = () => {
-      onRejected(this._promiseResult);
+      if (typeof onRejected === 'function') {
+        onRejected(this._promiseResult);
+      }
     };
     switch (this._promiseState) {
       case 'pending':

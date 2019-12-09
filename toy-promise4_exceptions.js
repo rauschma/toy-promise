@@ -3,7 +3,6 @@
 //
 // Changes:
 // * .then() executes onFulfilled and onRejected differently
-// * New method .catch()
 
 import * as assert from 'assert';
 
@@ -17,7 +16,6 @@ export class ToyPromise4 {
   then(onFulfilled, onRejected) {
     const resultPromise = new ToyPromise4();
 
-    // Runs if the Promise is fulfilled (now or later)
     const fulfillmentTask = () => {
       if (typeof onFulfilled === 'function') {
         this._runReactionSafely(resultPromise, onFulfilled); // [new]
@@ -56,6 +54,10 @@ export class ToyPromise4 {
     return resultPromise;
   }
 
+  catch(onRejected) {
+    return this.then(null, onRejected);
+  }
+
   _runReactionSafely(resultPromise, reaction) { // [new]
     try {
       const returned = reaction(this._promiseResult);
@@ -63,10 +65,6 @@ export class ToyPromise4 {
     } catch (e) {
       resultPromise.reject(e);
     }
-  }
-
-  catch(onRejected) { // [new]
-    return this.then(null, onRejected);
   }
 
   resolve(value) {
